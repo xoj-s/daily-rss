@@ -34,28 +34,19 @@ jobs:
         run: npm ci
 
       # ============================================
-      # 阶段 1: 抓取 RSS（调试后取消注释）
+      # 阶段 1: 抓取 RSS（框架模式生成模拟数据）
       # ============================================
-      # - name: Fetch RSS feeds
-      #   run: npm run fetch
-      #   env:
-      #     # 如需代理可在此配置
-      #     HTTP_PROXY: ${{ secrets.HTTP_PROXY }}
+      - name: Fetch RSS feeds
+        run: npm run fetch
 
       # ============================================
-      # 阶段 2: AI 摘要（调试后取消注释）
+      # 阶段 2: AI 摘要（框架模式生成模拟摘要）
       # ============================================
-      # - name: Generate AI summaries
-      #   run: npm run summarize
-      #   env:
-      #     # 选择一种 LLM 提供商：
-      #     # Option 1: OpenAI
-      #     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      #     # Option 2: 本地 Ollama（需要自托管 runner）
-      #     # OLLAMA_HOST: http://localhost:11434
+      - name: Generate AI summaries
+        run: npm run summarize
 
       # ============================================
-      # 阶段 3: 生成 HTML（框架模式使用模拟数据）
+      # 阶段 3: 生成 HTML
       # ============================================
       - name: Generate HTML
         run: npm run build
