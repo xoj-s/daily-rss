@@ -1,18 +1,26 @@
 #!/usr/bin/env node
 /**
  * RSS 抓取模块
- * 注意：此版本为框架代码，实际抓取逻辑待调试后启用
+ * 真实 RSS 抓取版本
  */
 
 const fs = require('fs');
 const path = require('path');
 const xml2js = require('xml2js');
+const Parser = require('rss-parser');
+
+const parser = new Parser({
+  timeout: 10000,
+  headers: {
+    'User-Agent': 'RSS-AI-Daily/1.0'
+  }
+});
 
 // 配置
 const CONFIG = {
   opmlPath: './subscriptions.opml',
   outputDir: './data',
-  maxItemsPerFeed: 5,  // 每个订阅源最多抓取几条
+  maxItemsPerFeed: 3,  // 每个订阅源最多抓取几条（避免太多）
   daysBack: 1,         // 抓取几天内的内容
 };
 
@@ -21,54 +29,7 @@ if (!fs.existsSync(CONFIG.outputDir)) {
   fs.mkdirSync(CONFIG.outputDir, { recursive: true });
 }
 
-// 模拟数据（用于框架测试）
-const MOCK_DATA = {
-  date: new Date().toISOString(),
-  feeds: [
-    {
-      category: "📰 科技新闻",
-      source: "示例科技媒体",
-      sourceUrl: "https://example.com",
-      items: [
-        {
-          title: "【示例】AI 技术新突破",
-          link: "https://example.com/article1",
-          pubDate: new Date().toISOString(),
-          content: "这是一篇示例文章，用于测试页面排版效果。实际部署后将显示真实抓取的内容。",
-          author: "示例作者"
-        }
-      ]
-    }
-  ]
-};
-
-async function main() {
-  console.log('📝 RSS 抓取框架');
-  console.log('================');
-  console.log('状态: 框架模式（未启用实际抓取）');
-  console.log('');
-  
-  // 保存模拟数据用于页面测试
-  const outputPath = path.join(CONFIG.outputDir, 'raw-data.json');
-  fs.writeFileSync(outputPath, JSON.stringify(MOCK_DATA, null, 2));
-  
-  console.log('✅ 已生成测试数据:', outputPath);
-  console.log('📊 数据概览:');
-  console.log(`   - 分类数: ${MOCK_DATA.feeds.length}`);
-  console.log(`   - 文章数: ${MOCK_DATA.feeds.reduce((sum, f) => sum + f.items.length, 0)}`);
-  console.log('');
-  console.log('💡 提示: 此框架使用模拟数据');
-  console.log('   上线调试后，取消注释下方代码启用真实抓取');
-}
-
-/* 
-// ============================================
-// 实际 RSS 抓取代码（调试后启用）
-// ============================================
-
-const Parser = require('rss-parser');
-const parser = new Parser();
-
+// 解析 OPML 文件
 async function parseOPML(opmlPath) {
   const content = fs.readFileSync(opmlPath, 'utf-8');
   const result = await xml2js.parseStringPromise(content);
@@ -101,6 +62,7 @@ async function parseOPML(opmlPath) {
   return feeds;
 }
 
+// 抓取单个 RSS 源
 async function fetchFeed(feedInfo) {
   try {
     console.log(`  📡 抓取: ${feedInfo.title}`);
@@ -136,19 +98,32 @@ async function fetchFeed(feedInfo) {
   }
 }
 
-async function fetchAllFeeds() {
+// 主函数
+async function main() {
+  console.log('📝 RSS 抓取开始');
+  console.log('================');
+  console.log('');
+  
   const feedList = await parseOPML(CONFIG.opmlPath);
   console.log(`📚 发现 ${feedList.length} 个订阅源`);
   console.log('');
   
   const results = [];
+  let successCount = 0;
+  let failCount = 0;
+  
   for (const feed of feedList) {
     const result = await fetchFeed(feed);
     if (result && result.items.length > 0) {
       results.push(result);
+      successCount++;
+    } else if (result) {
+      successCount++;
+    } else {
+      failCount++;
     }
-    // 礼貌延迟
-    await new Promise(r => setTimeout(r, 1000));
+    // 礼貌延迟，避免请求过快
+    await new Promise(r => setTimeout(r, 500));
   }
   
   const data = {
@@ -161,11 +136,10 @@ async function fetchAllFeeds() {
   
   console.log('');
   console.log('✅ 抓取完成');
-  console.log(`📊 成功: ${results.length}/${feedList.length} 个源`);
+  console.log(`📊 成功: ${successCount}/${feedList.length} 个源`);
+  console.log(`❌ 失败: ${failCount} 个源`);
   console.log(`📝 文章: ${results.reduce((sum, f) => sum + f.items.length, 0)} 篇`);
+  console.log(`💾 数据已保存: ${outputPath}`);
 }
-
-// 启用实际抓取时，将 main() 替换为 fetchAllFeeds()
-*/
 
 main().catch(console.error);

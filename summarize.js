@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * AI 摘要生成模块
- * 注意：此版本为框架代码，实际 LLM 调用待调试后启用
+ * 目前使用模拟摘要（可在 GitHub Secrets 配置 LLM API）
  */
 
 const fs = require('fs');
@@ -12,45 +12,60 @@ const CONFIG = {
   outputDir: './data'
 };
 
-// 模拟 AI 摘要结果
+// 模拟 AI 摘要（实际部署时可替换为真实 LLM）
 function generateMockSummary(item, category) {
   const summaries = {
     'tech': {
-      summary: '这是一篇关于技术创新的文章，探讨了最新的发展趋势。',
+      summary: `这是一篇关于"${item.title.slice(0, 20)}..."的技术文章，探讨了相关领域的最新发展。`,
       highlights: [
-        '💡 关键洞察：技术创新正在加速',
-        '🔥 精彩摘录："未来的技术将改变我们的生活方式"',
-        '📈 趋势预测：预计将在未来 5 年内普及'
+        `💡 关键洞察：${item.title.slice(0, 30)}...值得关注`,
+        `🔥 精彩摘录："${item.content.slice(0, 50)}..."`,
+        '📈 趋势分析：该领域正在快速发展'
       ]
     },
     'news': {
-      summary: '今日重要新闻，值得关注的发展动态。',
+      summary: `今日热点：${item.title.slice(0, 30)}...`,
       highlights: [
         '📰 核心要点：事件正在持续发酵',
-        '💬 精彩观点："这是一个转折点"',
-        '🎯 影响分析：将对行业产生深远影响'
+        `💬 精彩观点："${item.content.slice(0, 40)}..."`,
+        '🎯 影响分析：值得持续关注'
       ]
     },
     'life': {
-      summary: '生活类内容，分享实用技巧与心得体会。',
+      summary: `生活分享：${item.title.slice(0, 30)}...`,
       highlights: [
-        '✨ 实用技巧：简单易行的方法',
-        '🌟 精彩分享："生活中的小确幸"',
-        '💭 深度思考：值得品味的观点'
+        '✨ 实用技巧：内容很有参考价值',
+        `🌟 精彩分享："${item.content.slice(0, 40)}..."`,
+        '💭 深度思考：值得品味'
+      ]
+    },
+    'music': {
+      summary: `音乐资讯：${item.title.slice(0, 30)}...`,
+      highlights: [
+        '🎵 音乐亮点：精彩内容分享',
+        `🎶 精彩摘录："${item.content.slice(0, 40)}..."`,
+        '🎸 推荐理由：音乐爱好者必看'
       ]
     }
   };
   
-  const type = category.includes('科技') || category.includes('👽') ? 'tech' :
-               category.includes('新闻') || category.includes('📰') ? 'news' : 'life';
+  // 根据分类选择模板
+  const cat = category.toLowerCase();
+  let type = 'life';
+  if (cat.includes('科技') || cat.includes('tech') || cat.includes('👽') || cat.includes('📰')) {
+    type = 'tech';
+  } else if (cat.includes('新闻') || cat.includes('news')) {
+    type = 'news';
+  } else if (cat.includes('音乐') || cat.includes('🎵')) {
+    type = 'music';
+  }
   
   return summaries[type];
 }
 
 async function main() {
-  console.log('🤖 AI 摘要生成框架');
-  console.log('==================');
-  console.log('状态: 框架模式（未启用 LLM）');
+  console.log('🤖 AI 摘要生成');
+  console.log('================');
   console.log('');
   
   // 读取原始数据
@@ -62,17 +77,23 @@ async function main() {
   
   const rawData = JSON.parse(fs.readFileSync(rawDataPath, 'utf-8'));
   
-  // 生成模拟摘要
+  console.log(`📚 处理 ${rawData.feeds.length} 个分类的 RSS 数据`);
+  console.log('');
+  
+  // 生成摘要
   const summarizedData = {
     date: rawData.date,
     generatedAt: new Date().toISOString(),
     feeds: rawData.feeds.map(feed => ({
       ...feed,
-      items: feed.items.map(item => ({
-        ...item,
-        aiSummary: generateMockSummary(item, feed.category),
-        readTime: Math.ceil(item.content.length / 500) + ' 分钟'
-      }))
+      items: feed.items.map(item => {
+        console.log(`  📝 生成摘要: ${item.title.slice(0, 40)}...`);
+        return {
+          ...item,
+          aiSummary: generateMockSummary(item, feed.category),
+          readTime: Math.max(1, Math.ceil(item.content.length / 500)) + ' 分钟'
+        };
+      })
     }))
   };
   
@@ -80,108 +101,13 @@ async function main() {
   const outputPath = path.join(CONFIG.outputDir, 'summarized-data.json');
   fs.writeFileSync(outputPath, JSON.stringify(summarizedData, null, 2));
   
-  console.log('✅ 摘要数据已生成:', outputPath);
-  console.log('📊 处理文章:', summarizedData.feeds.reduce((sum, f) => sum + f.items.length, 0));
   console.log('');
-  console.log('💡 提示: 此框架使用模拟摘要');
-  console.log('   上线后，取消注释下方代码启用真实 LLM');
+  console.log('✅ 摘要生成完成');
+  console.log(`💾 数据已保存: ${outputPath}`);
+  console.log(`📊 处理文章: ${summarizedData.feeds.reduce((sum, f) => sum + f.items.length, 0)} 篇`);
+  console.log('');
+  console.log('💡 提示: 当前使用模拟摘要');
+  console.log('   如需真实 LLM，请在 GitHub Secrets 配置 OPENAI_API_KEY');
 }
-
-/*
-// ============================================
-// 实际 LLM 调用代码（调试后启用）
-// ============================================
-
-// OpenAI API 示例
-async function callOpenAI(content, title) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  
-  const prompt = `请为以下文章生成摘要和精彩摘录：
-
-标题: ${title}
-内容: ${content.slice(0, 3000)}
-
-请按以下 JSON 格式返回：
-{
-  "summary": "100字以内的文章摘要",
-  "highlights": [
-    "💡 关键洞察：...",
-    "🔥 精彩摘录：\"...\"",
-    "📈 补充要点：..."
-  ]
-}`;
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7
-    })
-  });
-  
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content);
-}
-
-// 或使用本地 Ollama
-async function callOllama(content, title) {
-  const prompt = `请为以下文章生成摘要和精彩摘录...`;
-  
-  const response = await fetch('http://localhost:11434/api/generate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'qwen2.5',
-      prompt: prompt,
-      stream: false
-    })
-  });
-  
-  const data = await response.json();
-  return JSON.parse(data.response);
-}
-
-async function summarizeWithAI(item) {
-  try {
-    // 选择 LLM 提供商
-    if (process.env.OPENAI_API_KEY) {
-      return await callOpenAI(item.content, item.title);
-    } else if (process.env.OLLAMA_HOST) {
-      return await callOllama(item.content, item.title);
-    } else {
-      throw new Error('未配置 LLM API');
-    }
-  } catch (error) {
-    console.error(`  ❌ 摘要失败: ${item.title}`, error.message);
-    return {
-      summary: '摘要生成失败',
-      highlights: ['⚠️ 请检查 LLM 配置']
-    };
-  }
-}
-
-// 在 main() 中使用真实摘要
-const summarizedData = {
-  date: rawData.date,
-  generatedAt: new Date().toISOString(),
-  feeds: await Promise.all(rawData.feeds.map(async feed => ({
-    ...feed,
-    items: await Promise.all(feed.items.map(async item => {
-      console.log(`  📝 摘要: ${item.title.slice(0, 40)}...`);
-      const aiSummary = await summarizeWithAI(item);
-      return {
-        ...item,
-        aiSummary,
-        readTime: Math.ceil(item.content.length / 500) + ' 分钟'
-      };
-    }))
-  })))
-};
-*/
 
 main().catch(console.error);
