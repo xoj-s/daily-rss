@@ -20,8 +20,8 @@ const parser = new Parser({
 const CONFIG = {
   opmlPath: './subscriptions.opml',
   outputDir: './data',
-  maxItemsPerFeed: 3,  // 每个订阅源最多抓取几条（避免太多）
-  daysBack: 1,         // 抓取几天内的内容
+  maxItemsPerFeed: 5,  // 每个订阅源最多抓取几条
+  daysBack: 30,        // 抓取30天内的内容（确保有内容显示）
 };
 
 // 确保目录存在
@@ -75,7 +75,11 @@ async function fetchFeed(feedInfo) {
     const recentItems = feed.items
       .filter(item => {
         const pubDate = new Date(item.pubDate || item.isoDate);
-        return pubDate >= cutoffDate;
+        const isRecent = pubDate >= cutoffDate;
+        if (!isRecent && item.pubDate) {
+          console.log(`    ⏰ 跳过旧文章: ${item.title?.slice(0, 30)}... (${pubDate.toLocaleDateString()})`);
+        }
+        return isRecent;
       })
       .slice(0, CONFIG.maxItemsPerFeed)
       .map(item => ({
@@ -114,11 +118,15 @@ async function main() {
   
   for (const feed of feedList) {
     const result = await fetchFeed(feed);
-    if (result && result.items.length > 0) {
-      results.push(result);
-      successCount++;
-    } else if (result) {
-      successCount++;
+    if (result) {
+      if (result.items.length > 0) {
+        results.push(result);
+        successCount++;
+        console.log(`    ✅ 成功: ${result.items.length} 篇文章`);
+      } else {
+        console.log(`    ⚠️  该源没有近期文章`);
+        successCount++;
+      }
     } else {
       failCount++;
     }
