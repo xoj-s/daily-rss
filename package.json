@@ -1,0 +1,21 @@
+{
+  "name": "rss-ai-daily",
+  "version": "1.0.0",
+  "description": "AI-powered RSS Daily Report Generator",
+  "main": "generate.js",
+  "scripts": {
+    "build": "node generate.js",
+    "fetch": "node fetch-rss.js",
+    "summarize": "node summarize.js",
+    "full": "npm run fetch && npm run summarize && npm run build"
+  },
+  "keywords": ["rss", "ai", "daily", "summary", "github-pages"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "xml2js": "^0.6.2",
+    "rss-parser": "^3.13.0",
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12"
+  }
+}
